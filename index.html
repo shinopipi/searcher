@@ -165,7 +165,7 @@ details.arch summary{color:var(--sub);font-size:14px;padding:8px 2px}
   <div class="top">
     <button class="ib" data-act="home" aria-label="ホーム"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></button>
     <div class="ttl" id="rTitle"></div>
-    <a class="ib" id="rExt" target="_blank" rel="noopener noreferrer" aria-label="DuckDuckGoで開く"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></svg></a>
+    <a class="ib" id="rExt" target="_blank" rel="noopener noreferrer" aria-label="Googleで開く"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></svg></a>
   </div>
   <div id="rBody"></div>
 </section>
@@ -320,15 +320,25 @@ function addFavSheet() {
 async function showResults(q) {
   $('#results').classList.add('on');
   $('#rTitle').textContent = q;
-  const ddg = 'https://duckduckgo.com/?q=' + encodeURIComponent(q);
+  const ddg = 'https://www.google.com/search?q=' + encodeURIComponent(q) + '&hl=ja';
   $('#rExt').href = ddg;
   $('#rBody').innerHTML = skeleton(4);
   try {
     const key = 's:' + q;
     let items = cache.get(key);
     if (!items) {
-      const md = await readerFetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q) + '&kl=jp-jp');
-      items = parseDDG(md.content || '');
+      // ① Google → ② 取れなければDuckDuckGo → ③ それでもダメならWikipedia
+      try {
+        const g = await readerFetch('https://www.google.com/search?q=' + encodeURIComponent(q) + '&hl=ja&gl=jp&num=15');
+        items = parseGoogle(g.content || '');
+      } catch { items = []; }
+      if (items.length < 3) {
+        try {
+          const md = await readerFetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q) + '&kl=jp-jp');
+          const d = parseDDG(md.content || '');
+          if (d.length > items.length) items = d;
+        } catch {}
+      }
       if (!items.length) items = await wikiSearch(q);
       cache.set(key, items);
     }
@@ -340,13 +350,47 @@ async function showResults(q) {
             <h3>${esc(r.t)}</h3>${r.s ? `<p>${esc(r.s)}</p>` : ''}
           </button>`).join('')}</div>`
       : `<div class="err">結果を取得できませんでした。</div>`;
-    $('#rBody').insertAdjacentHTML('beforeend', `<a class="ext" href="${esc(ddg)}" target="_blank" rel="noopener noreferrer">DuckDuckGoでそのまま見る ↗</a>`);
+    $('#rBody').insertAdjacentHTML('beforeend', `<a class="ext" href="${esc(ddg)}" target="_blank" rel="noopener noreferrer">Googleでそのまま見る ↗</a>`);
   } catch (err) {
-    $('#rBody').innerHTML = `<div class="err">検索に失敗しました（${esc(err.message)}）。<br>少し待ってもう一度試すか、右上のボタンからDuckDuckGoで開いてください。</div>`;
+    $('#rBody').innerHTML = `<div class="err">検索に失敗しました（${esc(err.message)}）。<br>少し待ってもう一度試すか、右上のボタンからGoogleで開いてください。</div>`;
   }
 }
 $('#rBody').addEventListener('click', e => { const b = e.target.closest('.r'); if (b) openPage(b.dataset.u); });
 
+function parseGoogle(md) {
+  // Googleの結果リンク（/url?q=本当のURL か 直接のURL）を拾う。Google自身のリンクは除外
+  const out = [], seen = new Set();
+  const re = /\[((?:[^\[\]]|\[[^\]]*\])*)\]\((https?:\/\/[^)\s]+)\)/g;
+  let m;
+  while ((m = re.exec(md))) {
+    let u = m[2];
+    try {
+      const p = new URL(u);
+      if (/(^|\.)google\.[a-z.]+$/.test(p.hostname)) {
+        if (p.pathname !== '/url') continue;
+        u = p.searchParams.get('q') || p.searchParams.get('url') || '';
+      }
+      if (!okUrl(u)) continue;
+      const h = new URL(u).hostname;
+      if (/(^|\.)(google\.[a-z.]+|gstatic\.com|googleusercontent\.com|youtube\.com\/redirect)$/.test(h)) continue;
+      u = u.split('#')[0];
+    } catch { continue; }
+    if (seen.has(u)) continue;
+    const lines = m[1].replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/!\[[^\]]*\]/g, '').replace(/[#*_]/g, '')
+      .split(/\\n|\n|  +/).map(s => s.trim()).filter(Boolean);
+    const t = lines.find(s => !/›|^https?:/.test(s) && s.length > 3);
+    if (!t) continue;
+    seen.add(u);
+    out.push({ u, t, s: '', _i: re.lastIndex });
+  }
+  // 説明文：リンクの直後にある普通の文章を拾う
+  out.forEach(r => {
+    const after = md.slice(r._i, r._i + 900).split('\n')
+      .map(s => s.trim()).find(s => s.length > 30 && !/^\[|^!\[|^https?:|›/.test(s));
+    if (after) r.s = after.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_]/g, '');
+  });
+  return out.slice(0, 15);
+}
 function parseDDG(md) {
   // DuckDuckGo HTML版のリンク（/l/?uddg=本当のURL）を拾って、タイトル・説明文にまとめる
   const map = new Map();
