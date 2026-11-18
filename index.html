@@ -84,6 +84,10 @@ svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 .r .d{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);margin-bottom:6px}
 .r .d .mono{width:22px;height:22px;border-radius:7px;font-size:11px}
 .r h3{margin:0 0 6px;font-size:16px;line-height:1.35}
+.modebar{position:relative;display:inline-flex;gap:4px;padding:4px;border-radius:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin:0 0 6px;font-size:12px}
+.modebar button{padding:6px 12px;border-radius:16px;color:#fff;opacity:.8}
+.modebar button.on{background:#fff;color:#1b1530;opacity:1;font-weight:700}
+.rd{margin-top:10px;display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:6px 10px;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
 .r p{margin:0;font-size:13px;line-height:1.55;color:var(--sub);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .hint{font-size:13px;color:var(--sub);margin:4px 2px 12px}
 .ext{display:inline-flex;gap:6px;align-items:center;margin-top:14px;padding:10px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-decoration:none;font-size:14px}
@@ -152,6 +156,7 @@ details.arch summary{color:var(--sub);font-size:14px;padding:8px 2px}
     <h1>Shino Search</h1>
   </div>
   <p class="greet" id="greet"></p>
+  <div class="modebar" id="modebar"><button data-m="orig">元のサイトで開く</button><button data-m="reader">読みやすい表示</button></div>
 
   <div class="sect"><span>お気に入り</span><button id="editFav">編集</button></div>
   <div class="favs" id="favs"></div>
@@ -232,6 +237,7 @@ let favs = store.get('favs', [
 let tabs = store.get('tabs', []);       // {u,t,ts}
 let archive = store.get('archive', []);
 let prefs = store.get('prefs', { fs: 17, img: true });
+if (!prefs.mode) prefs.mode = 'orig';
 const cache = new Map();
 
 /* ---------- helpers ---------- */
@@ -254,7 +260,14 @@ function looksLikeUrl(s) { return /^https?:\/\//i.test(s) || (/^[\w-]+(\.[\w-]+)
 
 /* ---------- routing (iPhoneのスワイプ戻るが効くようにハッシュで管理) ---------- */
 const go = (h) => { location.hash = h; };
-const openPage = u => go('#r=' + encodeURIComponent(u));
+const openReader = u => go('#r=' + encodeURIComponent(u));
+// 標準は「元のサイト」をSafariで開く。設定で「読みやすい表示」に切り替え可能
+function openPage(u, title) {
+  if (prefs.mode === 'reader') return openReader(u);
+  touchTab(u, title || null);
+  const w = window.open(u, '_blank', 'noopener');
+  if (!w) location.href = u;
+}
 const search = q => go('#s=' + encodeURIComponent(q));
 
 function route() {
@@ -272,7 +285,7 @@ function showHome() {
   $('#home').classList.add('on');
   const hr = new Date().getHours();
   $('#greet').textContent = hr < 5 ? 'こんばんは。夜ふかしですね 🌙' : hr < 11 ? 'おはようございます ☀️' : hr < 18 ? 'こんにちは 👋' : 'こんばんは 🌙';
-  renderFavs(); renderRecent();
+  renderFavs(); renderRecent(); renderMode();
 }
 function renderFavs() {
   $('#favs').innerHTML = favs.map((f, i) => `
@@ -295,7 +308,13 @@ $('#favs').addEventListener('click', e => {
   if (x) { favs.splice(+x.dataset.x, 1); store.set('favs', favs); renderFavs(); return; }
   if (e.target.closest('#addFav')) { addFavSheet(); return; }
   const f = e.target.closest('.fav[data-i]');
-  if (f && !$('#home').classList.contains('editing')) openPage(favs[+f.dataset.i].u);
+  if (f && !$('#home').classList.contains('editing')) openPage(favs[+f.dataset.i].u, favs[+f.dataset.i].t);
+});
+function renderMode() { document.querySelectorAll('#modebar button').forEach(b => b.classList.toggle('on', b.dataset.m === prefs.mode)); }
+$('#modebar').addEventListener('click', e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  prefs.mode = b.dataset.m; store.set('prefs', prefs); renderMode();
+  toast(prefs.mode === 'orig' ? '元のサイトで開きます' : '読みやすい表示で開きます');
 });
 $('#editFav').onclick = () => { const on = $('#home').classList.toggle('editing'); $('#editFav').textContent = on ? '完了' : '編集'; };
 $('#recent').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if (b) openPage(b.dataset.u); });
@@ -344,10 +363,11 @@ async function showResults(q) {
     }
     if (location.hash !== '#s=' + encodeURIComponent(q)) return;
     $('#rBody').innerHTML = items.length
-      ? `<p class="hint">結果をタップすると、広告なしのリーダー表示で開きます</p><div class="res">${items.map(r => `
+      ? `<p class="hint">${prefs.mode === 'orig' ? '結果をタップすると元のサイトが開きます。「📖」で広告なし表示' : '結果をタップすると、広告なしのリーダー表示で開きます'}</p><div class="res">${items.map(r => `
           <button class="r" data-u="${esc(r.u)}">
             <div class="d">${mono(r.u)}<span>${esc(host(r.u))}</span></div>
             <h3>${esc(r.t)}</h3>${r.s ? `<p>${esc(r.s)}</p>` : ''}
+            ${prefs.mode === 'orig' ? `<span class="rd" data-rd="${esc(r.u)}">📖 読みやすく表示</span>` : ''}
           </button>`).join('')}</div>`
       : `<div class="err">結果を取得できませんでした。</div>`;
     $('#rBody').insertAdjacentHTML('beforeend', `<a class="ext" href="${esc(ddg)}" target="_blank" rel="noopener noreferrer">Googleでそのまま見る ↗</a>`);
@@ -355,7 +375,10 @@ async function showResults(q) {
     $('#rBody').innerHTML = `<div class="err">検索に失敗しました（${esc(err.message)}）。<br>少し待ってもう一度試すか、右上のボタンからGoogleで開いてください。</div>`;
   }
 }
-$('#rBody').addEventListener('click', e => { const b = e.target.closest('.r'); if (b) openPage(b.dataset.u); });
+$('#rBody').addEventListener('click', e => {
+  const rd = e.target.closest('[data-rd]'); if (rd) { openReader(rd.dataset.rd); return; }
+  const b = e.target.closest('.r'); if (b) openPage(b.dataset.u, b.querySelector('h3').textContent);
+});
 
 function parseGoogle(md) {
   // Googleの結果リンク（/url?q=本当のURL か 直接のURL）を拾う。Google自身のリンクは除外
@@ -466,7 +489,7 @@ function cleanContent(md, title) {
 $('#pBody').addEventListener('click', e => {
   const a = e.target.closest('a[data-u]');
   if (!a) return;
-  e.preventDefault(); openPage(a.dataset.u);
+  e.preventDefault(); openReader(a.dataset.u);
 });
 
 /* ---------- 安全なMarkdown→HTML（HTMLは全部エスケープ、http/httpsのリンクだけ許可） ---------- */
