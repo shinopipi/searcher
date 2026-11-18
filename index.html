@@ -555,6 +555,23 @@ document.addEventListener('click', e => {
   if (b.dataset.act === 'home') go('');
   if (b.dataset.act === 'back') { if (history.length > 1) history.back(); else go(''); }
 });
+/* ---------- 触覚フィードバック ----------
+   iPhone(Safari)は振動APIが無いので、iOS 17.4以降の「スイッチ型チェックボックス」を
+   見えない所で切り替えると本体がコツッと振動する仕組みを利用。Androidは vibrate を使う。 */
+const hapticSw = document.createElement('input');
+hapticSw.type = 'checkbox'; hapticSw.setAttribute('switch', ''); hapticSw.id = 'hapticSw';
+const hapticLb = document.createElement('label');
+hapticLb.htmlFor = 'hapticSw';
+[hapticSw, hapticLb].forEach(el => { el.style.cssText = 'position:fixed;left:-9999px;opacity:0;pointer-events:none'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); });
+function haptic() {
+  try { if (navigator.vibrate && navigator.vibrate(10)) return; } catch {}
+  try { hapticLb.click(); } catch {}
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('label[for="hapticSw"], #hapticSw')) return;
+  if (e.target.closest('button, a.ib, a.ext, .fav, .tab')) haptic();
+}, true);
+
 window.addEventListener('hashchange', route);
 applyPrefs(); autoArchive(); route();
 })();
