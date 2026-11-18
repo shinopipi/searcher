@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shino Search">
+<meta name="theme-color" content="#1b1530">
+<meta name="referrer" content="no-referrer">
+<title>Shino Search</title>
+<style>
+:root{
+  --bg1:#ff7a8a; --bg2:#8a5cff; --bg3:#2fb8ff;
+  --glass:rgba(255,255,255,.72); --glass-b:rgba(255,255,255,.55);
+  --ink:#16131f; --sub:#6b6780; --line:rgba(20,10,40,.08);
+  --card:#ffffff; --page:#fbfaff; --accent:#6b4cff;
+  --safe-b:env(safe-area-inset-bottom); --safe-t:env(safe-area-inset-top);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --glass:rgba(30,26,44,.72); --glass-b:rgba(255,255,255,.08);
+    --ink:#f3f1fa; --sub:#a29db8; --line:rgba(255,255,255,.08);
+    --card:#1f1b2d; --page:#141120; --accent:#a48bff; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:var(--page);overscroll-behavior-y:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+a{color:var(--accent)}
+.view{display:none;min-height:100%;padding:calc(var(--safe-t) + 16px) 18px calc(var(--safe-b) + 110px)}
+.view.on{display:block}
+
+/* ---------- Home ---------- */
+#home{position:relative;overflow:hidden;background:
+  radial-gradient(120% 70% at 0% 0%,var(--bg1) 0%,transparent 60%),
+  radial-gradient(120% 70% at 100% 20%,var(--bg2) 0%,transparent 65%),
+  radial-gradient(120% 80% at 50% 110%,var(--bg3) 0%,transparent 60%),#1b1530;color:#fff}
+#home .blob{position:absolute;width:320px;height:320px;border-radius:50%;filter:blur(60px);opacity:.55;animation:float 14s ease-in-out infinite;pointer-events:none}
+@keyframes float{50%{transform:translate(40px,60px) scale(1.15)}}
+.brand{display:flex;align-items:center;gap:10px;margin:28px 0 6px;position:relative}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#fff,#ffd6f0);display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.brand h1{font-size:28px;margin:0;letter-spacing:-.02em}
+.greet{opacity:.85;margin:0 0 26px;position:relative}
+.sect{font-size:13px;font-weight:700;letter-spacing:.06em;opacity:.8;margin:22px 0 10px;position:relative;display:flex;justify-content:space-between}
+.sect button{font-size:13px;opacity:.9}
+.favs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;position:relative}
+.fav{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;position:relative}
+.fav .ic{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;font-size:22px;font-weight:800;color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.fav span{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav .x{position:absolute;top:-6px;right:4px;width:22px;height:22px;border-radius:50%;background:#ff4d6d;color:#fff;font-size:13px;display:none}
+.editing .fav .x{display:block}
+.editing .fav .ic{animation:wig .3s ease-in-out infinite alternate}
+@keyframes wig{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
+.recent{position:relative;display:flex;flex-direction:column;gap:8px}
+.rc{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);text-align:left;width:100%}
+.rc b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc small{opacity:.75;font-size:12px}
+.rc .t{min-width:0;flex:1}
+.mono{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff}
+.empty{opacity:.7;font-size:13px;position:relative}
+
+/* ---------- Bottom bar ---------- */
+#bar{position:fixed;left:12px;right:12px;bottom:calc(var(--safe-b) + 12px);display:flex;gap:8px;align-items:center;z-index:20}
+#bar form{flex:1;display:flex;align-items:center;gap:8px;height:52px;padding:0 8px 0 16px;border-radius:26px;background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 10px 30px rgba(20,10,60,.25)}
+#q{flex:1;min-width:0;border:0;outline:0;background:none;font-size:17px;color:var(--ink)}
+#q::placeholder{color:var(--sub)}
+.round{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 10px 30px rgba(20,10,60,.25);position:relative}
+.badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.go{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#fff;display:grid;place-items:center}
+svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Top bar on inner pages ---------- */
+.top{position:sticky;top:0;z-index:10;margin:calc(-1 * (var(--safe-t) + 16px)) -18px 12px;padding:calc(var(--safe-t) + 8px) 12px 8px;display:flex;align-items:center;gap:6px;background:color-mix(in srgb,var(--page) 82%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.top .ttl{flex:1;min-width:0;text-align:center;font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.ib:active{background:var(--line)}
+.ib.on{color:#ffb400}
+.ib.on svg{fill:#ffb400}
+
+/* ---------- Results ---------- */
+.res{display:flex;flex-direction:column;gap:10px}
+.r{display:block;text-align:left;width:100%;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.r .d{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);margin-bottom:6px}
+.r .d .mono{width:22px;height:22px;border-radius:7px;font-size:11px}
+.r h3{margin:0 0 6px;font-size:16px;line-height:1.35}
+.r p{margin:0;font-size:13px;line-height:1.55;color:var(--sub);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hint{font-size:13px;color:var(--sub);margin:4px 2px 12px}
+.ext{display:inline-flex;gap:6px;align-items:center;margin-top:14px;padding:10px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-decoration:none;font-size:14px}
+
+/* ---------- Reader ---------- */
+#reader article{max-width:680px;margin:0 auto;font-size:var(--fs,17px);line-height:1.85;word-break:break-word}
+.meta{display:flex;align-items:center;gap:8px;color:var(--sub);font-size:13px;margin:6px 0 4px}
+.meta .mono{width:24px;height:24px;border-radius:8px;font-size:12px}
+#reader h1.title{font-size:1.55em;line-height:1.35;margin:.3em 0 .4em;letter-spacing:-.01em}
+.shield{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:color-mix(in srgb,#21c07a 15%,transparent);color:#17a066;margin-bottom:14px}
+.shield svg{width:14px;height:14px}
+article h2{font-size:1.25em;margin:1.6em 0 .5em;line-height:1.4}
+article h3,article h4{font-size:1.08em;margin:1.4em 0 .4em}
+article p{margin:0 0 1.1em}
+article img{max-width:100%;height:auto;border-radius:12px;display:block;margin:1em auto}
+article blockquote{margin:1em 0;padding:.4em 1em;border-left:4px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;color:var(--sub)}
+article pre{overflow:auto;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:.8em;line-height:1.5}
+article code{font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+article ul,article ol{padding-left:1.3em}
+article hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+article table{border-collapse:collapse;display:block;overflow:auto;font-size:.85em}
+article td,article th{border:1px solid var(--line);padding:6px 8px}
+.imgoff article img{display:none}
+
+/* ---------- Tabs ---------- */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tab{position:relative;text-align:left;border-radius:18px;overflow:hidden;background:var(--card);border:1px solid var(--line);min-height:150px;display:flex;flex-direction:column}
+.tab .hd{height:58px;display:flex;align-items:flex-end;padding:8px 10px;color:#fff;font-weight:800;font-size:22px}
+.tab .bd{padding:10px;flex:1}
+.tab b{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tab small{display:block;color:var(--sub);font-size:11px;margin-top:6px}
+.tab .cl{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;display:grid;place-items:center}
+.tab .cl svg{width:14px;height:14px}
+h2.h{font-size:22px;margin:4px 2px 4px}
+.toolrow{display:flex;justify-content:space-between;align-items:center;margin:0 2px 14px;color:var(--sub);font-size:13px}
+.toolrow button{color:var(--accent);font-size:14px}
+details.arch{margin-top:22px}
+details.arch summary{color:var(--sub);font-size:14px;padding:8px 2px}
+
+/* ---------- Misc ---------- */
+.loader{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.sk{height:16px;border-radius:8px;background:linear-gradient(90deg,var(--line),color-mix(in srgb,var(--accent) 18%,transparent),var(--line));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.err{padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:14px;line-height:1.6}
+#toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 80px);transform:translateX(-50%) translateY(20px);opacity:0;transition:.25s;background:#16131f;color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;z-index:50;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#sheet{position:fixed;inset:0;z-index:40;display:none;background:rgba(0,0,0,.35)}
+#sheet.on{display:block}
+#sheet .pn{position:absolute;left:10px;right:10px;bottom:calc(var(--safe-b) + 10px);background:var(--page);border-radius:22px;padding:18px}
+#sheet h4{margin:0 0 12px}
+#sheet input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;margin-bottom:10px}
+#sheet .row{display:flex;gap:10px;justify-content:flex-end}
+#sheet .row button{padding:10px 16px;border-radius:12px}
+#sheet .row .p{background:var(--accent);color:#fff}
+.fsrow{display:flex;gap:8px}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="view">
+  <div class="blob" style="background:#ff9ac1;top:-80px;left:-60px"></div>
+  <div class="blob" style="background:#7aa8ff;bottom:60px;right:-120px;animation-delay:-6s"></div>
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" style="stroke:#8a5cff"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+    <h1>Shino Search</h1>
+  </div>
+  <p class="greet" id="greet"></p>
+
+  <div class="sect"><span>お気に入り</span><button id="editFav">編集</button></div>
+  <div class="favs" id="favs"></div>
+
+  <div class="sect"><span>最近のタブ</span></div>
+  <div class="recent" id="recent"></div>
+</section>
+
+<!-- RESULTS -->
+<section id="results" class="view">
+  <div class="top">
+    <button class="ib" data-act="home" aria-label="ホーム"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></button>
+    <div class="ttl" id="rTitle"></div>
+    <a class="ib" id="rExt" target="_blank" rel="noopener noreferrer" aria-label="DuckDuckGoで開く"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></svg></a>
+  </div>
+  <div id="rBody"></div>
+</section>
+
+<!-- READER -->
+<section id="reader" class="view">
+  <div class="top">
+    <button class="ib" data-act="back" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="ttl" id="pHost"></div>
+    <button class="ib" id="starBtn" aria-label="お気に入り"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg></button>
+    <button class="ib" id="aaBtn" aria-label="表示設定"><svg viewBox="0 0 24 24"><path d="M4 19l5-14 5 14"/><path d="M5.8 14h6.4"/><path d="M15 19l3-8 3 8"/><path d="M16 16.5h4"/></svg></button>
+    <a class="ib" id="pExt" target="_blank" rel="noopener noreferrer" aria-label="元のページを開く"><svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></svg></a>
+  </div>
+  <article id="pBody"></article>
+</section>
+
+<!-- TABS -->
+<section id="tabsView" class="view">
+  <div class="top">
+    <button class="ib" data-act="home" aria-label="ホーム"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></button>
+    <div class="ttl">タブ</div>
+    <span class="ib"></span>
+  </div>
+  <h2 class="h">開いているタブ</h2>
+  <div class="toolrow"><span>24時間さわらないタブは自動でアーカイブ</span><button id="closeAll">すべて閉じる</button></div>
+  <div class="tabs" id="tabGrid"></div>
+  <details class="arch"><summary id="archSum">アーカイブ</summary><div class="tabs" id="archGrid" style="margin-top:10px"></div></details>
+</section>
+
+<!-- BOTTOM BAR -->
+<div id="bar">
+  <form id="f" autocomplete="off">
+    <svg viewBox="0 0 24 24" style="color:var(--sub);flex:none"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" enterkeyhint="go" placeholder="検索 または URLを入力">
+    <button class="go" aria-label="検索"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+  </form>
+  <button class="round" id="tabBtn" aria-label="タブ"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg><span class="badge" id="tabCount">0</span></button>
+</div>
+
+<div id="sheet"><div class="pn" id="sheetPn"></div></div>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const READER = 'https://r.jina.ai/';     // 広告・スクリプトを除いた本文だけを取り出すサービス
+const DAY = 24 * 60 * 60 * 1000;
+
+/* ---------- storage (失敗しても動くように) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ss_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('ss_' + k, JSON.stringify(v)); } catch {} }
+};
+let favs = store.get('favs', [
+  { t: 'Yahoo!ニュース', u: 'https://news.yahoo.co.jp/' },
+  { t: 'Wikipedia', u: 'https://ja.wikipedia.org/' },
+  { t: 'tenki.jp', u: 'https://tenki.jp/' },
+  { t: 'GitHub', u: 'https://github.com/' },
+  { t: 'ITmedia', u: 'https://www.itmedia.co.jp/' },
+  { t: 'Gigazine', u: 'https://gigazine.net/' },
+  { t: 'NHK', u: 'https://www3.nhk.or.jp/news/' },
+]);
+let tabs = store.get('tabs', []);       // {u,t,ts}
+let archive = store.get('archive', []);
+let prefs = store.get('prefs', { fs: 17, img: true });
+const cache = new Map();
+
+/* ---------- helpers ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+const okUrl = u => /^https?:\/\//i.test(u);
+function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function mono(u, extra = '') {
+  const h = host(u); const ch = (h.split('.')[0] || '?')[0].toUpperCase();
+  return `<span class="mono ${extra}" style="background:linear-gradient(135deg,hsl(${hue(h)} 75% 60%),hsl(${(hue(h) + 40) % 360} 70% 50%))">${esc(ch)}</span>`;
+}
+function ago(ts) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'たった今'; if (m < 60) return m + '分前';
+  const h = Math.round(m / 60); if (h < 24) return h + '時間前';
+  return Math.round(h / 24) + '日前';
+}
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 1800); }
+function looksLikeUrl(s) { return /^https?:\/\//i.test(s) || (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(s) && !/\s/.test(s)); }
+
+/* ---------- routing (iPhoneのスワイプ戻るが効くようにハッシュで管理) ---------- */
+const go = (h) => { location.hash = h; };
+const openPage = u => go('#r=' + encodeURIComponent(u));
+const search = q => go('#s=' + encodeURIComponent(q));
+
+function route() {
+  const h = location.hash;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  if (h.startsWith('#s=')) { const q = decodeURIComponent(h.slice(3)); $('#q').value = q; showResults(q); }
+  else if (h.startsWith('#r=')) { const u = decodeURIComponent(h.slice(3)); $('#q').value = u; showReader(u); }
+  else if (h === '#tabs') { showTabs(); }
+  else { $('#q').value = ''; showHome(); }
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Home ---------- */
+function showHome() {
+  $('#home').classList.add('on');
+  const hr = new Date().getHours();
+  $('#greet').textContent = hr < 5 ? 'こんばんは。夜ふかしですね 🌙' : hr < 11 ? 'おはようございます ☀️' : hr < 18 ? 'こんにちは 👋' : 'こんばんは 🌙';
+  renderFavs(); renderRecent();
+}
+function renderFavs() {
+  $('#favs').innerHTML = favs.map((f, i) => `
+    <button class="fav" data-i="${i}">
+      <span class="ic" style="background:linear-gradient(135deg,hsl(${hue(host(f.u))} 80% 65% / .55),hsl(${(hue(host(f.u)) + 50) % 360} 80% 55% / .35))">${esc((f.t || host(f.u))[0].toUpperCase())}</span>
+      <span>${esc(f.t || host(f.u))}</span>
+      <span class="x" data-x="${i}">×</span>
+    </button>`).join('') +
+    `<button class="fav" id="addFav"><span class="ic">＋</span><span>追加</span></button>`;
+}
+function renderRecent() {
+  const list = tabs.slice().sort((a, b) => b.ts - a.ts).slice(0, 5);
+  $('#recent').innerHTML = list.length ? list.map(t => `
+    <button class="rc" data-u="${esc(t.u)}">${mono(t.u)}
+      <span class="t"><b>${esc(t.t || host(t.u))}</b><small>${esc(host(t.u))} ・ ${ago(t.ts)}</small></span>
+    </button>`).join('') : '<p class="empty">まだタブはありません。下の検索バーから始めましょう。</p>';
+}
+$('#favs').addEventListener('click', e => {
+  const x = e.target.closest('[data-x]');
+  if (x) { favs.splice(+x.dataset.x, 1); store.set('favs', favs); renderFavs(); return; }
+  if (e.target.closest('#addFav')) { addFavSheet(); return; }
+  const f = e.target.closest('.fav[data-i]');
+  if (f && !$('#home').classList.contains('editing')) openPage(favs[+f.dataset.i].u);
+});
+$('#editFav').onclick = () => { const on = $('#home').classList.toggle('editing'); $('#editFav').textContent = on ? '完了' : '編集'; };
+$('#recent').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if (b) openPage(b.dataset.u); });
+
+/* ---------- Sheet (自前のダイアログ) ---------- */
+function sheet(html) { $('#sheetPn').innerHTML = html; $('#sheet').classList.add('on'); }
+function closeSheet() { $('#sheet').classList.remove('on'); }
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet' || e.target.dataset.close != null) closeSheet(); });
+function addFavSheet() {
+  sheet(`<h4>お気に入りを追加</h4>
+    <input id="fT" placeholder="名前（例：Yahoo!）">
+    <input id="fU" placeholder="URL（例：yahoo.co.jp）" inputmode="url">
+    <div class="row"><button data-close>キャンセル</button><button class="p" id="fOk">追加</button></div>`);
+  $('#fOk').onclick = () => {
+    let u = $('#fU').value.trim(); if (!u) return;
+    if (!okUrl(u)) u = 'https://' + u;
+    favs.push({ t: $('#fT').value.trim() || host(u), u }); store.set('favs', favs); renderFavs(); closeSheet();
+  };
+}
+
+/* ---------- Search ---------- */
+async function showResults(q) {
+  $('#results').classList.add('on');
+  $('#rTitle').textContent = q;
+  const ddg = 'https://duckduckgo.com/?q=' + encodeURIComponent(q);
+  $('#rExt').href = ddg;
+  $('#rBody').innerHTML = skeleton(4);
+  try {
+    const key = 's:' + q;
+    let items = cache.get(key);
+    if (!items) {
+      const md = await readerFetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q) + '&kl=jp-jp');
+      items = parseDDG(md.content || '');
+      if (!items.length) items = await wikiSearch(q);
+      cache.set(key, items);
+    }
+    if (location.hash !== '#s=' + encodeURIComponent(q)) return;
+    $('#rBody').innerHTML = items.length
+      ? `<p class="hint">結果をタップすると、広告なしのリーダー表示で開きます</p><div class="res">${items.map(r => `
+          <button class="r" data-u="${esc(r.u)}">
+            <div class="d">${mono(r.u)}<span>${esc(host(r.u))}</span></div>
+            <h3>${esc(r.t)}</h3>${r.s ? `<p>${esc(r.s)}</p>` : ''}
+          </button>`).join('')}</div>`
+      : `<div class="err">結果を取得できませんでした。</div>`;
+    $('#rBody').insertAdjacentHTML('beforeend', `<a class="ext" href="${esc(ddg)}" target="_blank" rel="noopener noreferrer">DuckDuckGoでそのまま見る ↗</a>`);
+  } catch (err) {
+    $('#rBody').innerHTML = `<div class="err">検索に失敗しました（${esc(err.message)}）。<br>少し待ってもう一度試すか、右上のボタンからDuckDuckGoで開いてください。</div>`;
+  }
+}
+$('#rBody').addEventListener('click', e => { const b = e.target.closest('.r'); if (b) openPage(b.dataset.u); });
+
+function parseDDG(md) {
+  // DuckDuckGo HTML版のリンク（/l/?uddg=本当のURL）を拾って、タイトル・説明文にまとめる
+  const map = new Map();
+  const re = /\[([^\]]*)\]\((?:https?:)?\/\/duckduckgo\.com\/l\/\?uddg=([^&)\s]+)[^)]*\)/g;
+  let m;
+  while ((m = re.exec(md))) {
+    let u; try { u = decodeURIComponent(m[2]); } catch { continue; }
+    if (!okUrl(u)) continue;
+    const text = m[1].replace(/\*\*/g, '').replace(/!\[[^\]]*\]/g, '').trim();
+    if (!text) continue;
+    if (!map.has(u)) map.set(u, []);
+    map.get(u).push(text);
+  }
+  return [...map].slice(0, 15).map(([u, texts]) => {
+    const notUrl = texts.filter(t => !/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(t) && t !== host(u));
+    const t = notUrl[0] || texts[0];
+    const s = notUrl.slice(1).sort((a, b) => b.length - a.length)[0] || '';
+    return { u, t, s };
+  });
+}
+async function wikiSearch(q) {
+  const r = await fetch('https://ja.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=10&srsearch=' + encodeURIComponent(q));
+  const j = await r.json();
+  return (j.query?.search || []).map(x => ({
+    u: 'https://ja.wikipedia.org/wiki/' + encodeURIComponent(x.title.replace(/ /g, '_')),
+    t: x.title, s: x.snippet.replace(/<[^>]+>/g, '')
+  }));
+}
+
+/* ---------- Reader ---------- */
+async function readerFetch(url) {
+  const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const r = await fetch(READER + url, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+    if (r.status === 429) throw new Error('混み合っています');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return j.data || {};
+  } catch (e) { throw new Error(e.name === 'AbortError' ? 'タイムアウト' : e.message); }
+  finally { clearTimeout(tm); }
+}
+async function showReader(u) {
+  $('#reader').classList.add('on');
+  $('#pHost').textContent = host(u);
+  $('#pExt').href = u;
+  updateStar(u);
+  const body = $('#pBody');
+  body.innerHTML = skeleton(9);
+  touchTab(u, null);
+  try {
+    let d = cache.get('r:' + u);
+    if (!d) { d = await readerFetch(u); cache.set('r:' + u, d); }
+    if (location.hash !== '#r=' + encodeURIComponent(u)) return;
+    const title = d.title || host(u);
+    const text = cleanContent(d.content || '', title);
+    const mins = Math.max(1, Math.round(text.replace(/\s/g, '').length / 600));
+    body.innerHTML = `
+      <div class="meta">${mono(u)}<span>${esc(host(u))} ・ 約${mins}分で読めます</span></div>
+      <h1 class="title">${esc(title)}</h1>
+      <div class="shield"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>広告・トラッカーを除去して表示中</div>
+      ${md2html(text, d.url || u)}`;
+    touchTab(u, title);
+  } catch (err) {
+    body.innerHTML = `<div class="err">このページは読み込めませんでした（${esc(err.message)}）。<br><br><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">元のページを開く ↗</a></div>`;
+  }
+}
+function cleanContent(md, title) {
+  return md.split('\n')
+    .filter(l => !/^\s*(\* |- )?\[(skip to|メニュー|ログイン|会員登録|シェア|ツイート|share|tweet)/i.test(l))
+    .join('\n').replace(new RegExp('^#\\s*' + title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'm'), '')
+    .replace(/\n{3,}/g, '\n\n');
+}
+$('#pBody').addEventListener('click', e => {
+  const a = e.target.closest('a[data-u]');
+  if (!a) return;
+  e.preventDefault(); openPage(a.dataset.u);
+});
+
+/* ---------- 安全なMarkdown→HTML（HTMLは全部エスケープ、http/httpsのリンクだけ許可） ---------- */
+function inline(s, base) {
+  s = esc(s);
+  const abs = raw => { try { const u = new URL(raw.replace(/&amp;/g, '&'), base).href; return okUrl(u) ? esc(u) : null; } catch { return null; } };
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g, (_, alt, src) => {
+    const u = abs(src); return u ? `<img src="${u}" alt="${alt}" loading="lazy" referrerpolicy="no-referrer">` : '';
+  });
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g, (_, txt, href) => {
+    const u = abs(href); return u ? `<a href="${u}" data-u="${u}">${txt}</a>` : txt;
+  });
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+       .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
+  return s;
+}
+function md2html(md, base) {
+  const lines = md.replace(/\r/g, '').split('\n');
+  let out = [], para = [], list = null, inCode = false, code = [];
+  const flushP = () => { if (para.length) { out.push('<p>' + inline(para.join(' '), base) + '</p>'); para = []; } };
+  const flushL = () => { if (list) { out.push(`<${list.t}>` + list.items.map(i => '<li>' + inline(i, base) + '</li>').join('') + `</${list.t}>`); list = null; } };
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (/^```/.test(l)) { if (inCode) { out.push('<pre><code>' + esc(code.join('\n')) + '</code></pre>'); code = []; inCode = false; } else { flushP(); flushL(); inCode = true; } continue; }
+    if (inCode) { code.push(l); continue; }
+    if (!l.trim()) { flushP(); flushL(); continue; }
+    let m;
+    if ((m = l.match(/^(#{1,6})\s+(.*)/))) { flushP(); flushL(); const n = Math.min(4, Math.max(2, m[1].length)); out.push(`<h${n}>${inline(m[2], base)}</h${n}>`); continue; }
+    if (i + 1 < lines.length && /^(=+|-+)\s*$/.test(lines[i + 1]) && l.trim()) { flushP(); flushL(); out.push(`<h2>${inline(l, base)}</h2>`); i++; continue; }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) { flushP(); flushL(); out.push('<hr>'); continue; }
+    if ((m = l.match(/^\s*>\s?(.*)/))) { flushP(); flushL(); out.push('<blockquote>' + inline(m[1], base) + '</blockquote>'); continue; }
+    if ((m = l.match(/^\s*([-*+]|\d+\.)\s+(.*)/))) {
+      flushP(); const t = /\d/.test(m[1]) ? 'ol' : 'ul';
+      if (!list || list.t !== t) { flushL(); list = { t, items: [] }; }
+      list.items.push(m[2]); continue;
+    }
+    if (/^\s*\|.*\|\s*$/.test(l)) {
+      flushP(); flushL(); const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { if (!/^\s*\|[\s:|-]+\|\s*$/.test(lines[i])) rows.push(lines[i]); i++; }
+      i--;
+      out.push('<table>' + rows.map(r => '<tr>' + r.trim().slice(1, -1).split('|').map(c => '<td>' + inline(c.trim(), base) + '</td>').join('') + '</tr>').join('') + '</table>');
+      continue;
+    }
+    flushL(); para.push(l.trim());
+  }
+  flushP(); flushL();
+  if (inCode) out.push('<pre><code>' + esc(code.join('\n')) + '</code></pre>');
+  return out.join('\n');
+}
+
+/* ---------- 表示設定 ---------- */
+function applyPrefs() {
+  document.documentElement.style.setProperty('--fs', prefs.fs + 'px');
+  document.body.classList.toggle('imgoff', !prefs.img);
+}
+$('#aaBtn').onclick = () => {
+  sheet(`<h4>表示設定</h4>
+    <div class="toolrow"><span>文字サイズ（${prefs.fs}px）</span><span class="fsrow"><button id="fsM">A−</button><button id="fsP">A＋</button></span></div>
+    <div class="toolrow"><span>画像を表示</span><button id="imgT">${prefs.img ? 'オン' : 'オフ'}</button></div>
+    <div class="row"><button class="p" data-close>閉じる</button></div>`);
+  const upd = () => { store.set('prefs', prefs); applyPrefs(); $('#aaBtn').click(); };
+  $('#fsM').onclick = () => { prefs.fs = Math.max(13, prefs.fs - 1); upd(); };
+  $('#fsP').onclick = () => { prefs.fs = Math.min(26, prefs.fs + 1); upd(); };
+  $('#imgT').onclick = () => { prefs.img = !prefs.img; upd(); };
+};
+function updateStar(u) { $('#starBtn').classList.toggle('on', favs.some(f => f.u === u)); }
+$('#starBtn').onclick = () => {
+  const u = decodeURIComponent(location.hash.slice(3));
+  const i = favs.findIndex(f => f.u === u);
+  if (i >= 0) { favs.splice(i, 1); toast('お気に入りから外しました'); }
+  else { const t = tabs.find(t => t.u === u); favs.push({ t: (t && t.t) ? t.t.slice(0, 12) : host(u), u }); toast('お気に入りに追加しました ⭐'); }
+  store.set('favs', favs); updateStar(u);
+};
+
+/* ---------- Tabs（Arc Searchのように自動アーカイブ） ---------- */
+function autoArchive() {
+  const now = Date.now();
+  const old = tabs.filter(t => now - t.ts > DAY);
+  if (old.length) {
+    tabs = tabs.filter(t => now - t.ts <= DAY);
+    archive = [...old, ...archive].slice(0, 60);
+    store.set('tabs', tabs); store.set('archive', archive);
+  }
+  $('#tabCount').textContent = tabs.length;
+}
+function touchTab(u, title) {
+  const ex = tabs.find(t => t.u === u);
+  if (ex) { ex.ts = Date.now(); if (title) ex.t = title; }
+  else tabs.unshift({ u, t: title || '', ts: Date.now() });
+  tabs = tabs.slice(0, 40);
+  store.set('tabs', tabs); $('#tabCount').textContent = tabs.length;
+}
+function tabCard(t, i, arch) {
+  const h = hue(host(t.u));
+  return `<div class="tab" data-u="${esc(t.u)}">
+    <div class="hd" style="background:linear-gradient(135deg,hsl(${h} 75% 60%),hsl(${(h + 50) % 360} 70% 50%))">${esc(host(t.u)[0].toUpperCase())}</div>
+    <div class="bd"><b>${esc(t.t || host(t.u))}</b><small>${esc(host(t.u))} ・ ${ago(t.ts)}</small></div>
+    <button class="cl" data-${arch ? 'a' : 'c'}="${i}" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>`;
+}
+function showTabs() {
+  $('#tabsView').classList.add('on');
+  autoArchive();
+  const sorted = tabs.map((t, i) => [t, i]).sort((a, b) => b[0].ts - a[0].ts);
+  $('#tabGrid').innerHTML = sorted.length ? sorted.map(([t, i]) => tabCard(t, i)).join('') : '<p class="hint">開いているタブはありません</p>';
+  $('#archSum').textContent = `アーカイブ（${archive.length}）`;
+  $('#archGrid').innerHTML = archive.map((t, i) => tabCard(t, i, true)).join('');
+}
+$('#tabsView').addEventListener('click', e => {
+  const c = e.target.closest('[data-c]'), a = e.target.closest('[data-a]');
+  if (c) { archive.unshift(tabs.splice(+c.dataset.c, 1)[0]); archive = archive.slice(0, 60); store.set('tabs', tabs); store.set('archive', archive); showTabs(); return; }
+  if (a) { archive.splice(+a.dataset.a, 1); store.set('archive', archive); showTabs(); return; }
+  const t = e.target.closest('.tab'); if (t) openPage(t.dataset.u);
+});
+$('#closeAll').onclick = () => { archive = [...tabs, ...archive].slice(0, 60); tabs = []; store.set('tabs', tabs); store.set('archive', archive); showTabs(); $('#tabCount').textContent = 0; toast('すべてアーカイブしました'); };
+
+/* ---------- 共通 ---------- */
+function skeleton(n) { return '<div class="loader">' + Array.from({ length: n }, (_, i) => `<div class="sk" style="width:${60 + ((i * 37) % 40)}%"></div>`).join('') + '</div>'; }
+$('#f').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('#q').value.trim(); if (!v) return;
+  $('#q').blur();
+  if (looksLikeUrl(v)) openPage(okUrl(v) ? v : 'https://' + v); else search(v);
+});
+$('#q').addEventListener('focus', () => $('#q').select());
+$('#tabBtn').onclick = () => go('#tabs');
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'home') go('');
+  if (b.dataset.act === 'back') { if (history.length > 1) history.back(); else go(''); }
+});
+window.addEventListener('hashchange', route);
+applyPrefs(); autoArchive(); route();
+})();
+</script>
+</body>
+</html>
